@@ -9,12 +9,24 @@
 </head>
 <body>
     <header>
-        <div class="container">
+        <div class="container header-content">
             <article class="title">
                 <img src="assets/images/logo.png" class="logo" alt="лого">
                 <h1>Moneyspace</h1>
             </article>
-        </div>
+
+            <div class="auth-group">
+                <span class="user-info">
+                    <span id="username-display"></span>
+                </span>
+                <button id="switchBtn" class="btn btn-expense">
+                    Змінити акаунт
+                </button>
+                <button id="logoutBtn" class="btn btn-income">
+                    Вийти
+                </button>
+            </div>
+        </div>  
     </header>
 
    <main class="container">
@@ -33,8 +45,8 @@
             <p>Витрати</p>
             <h2 class="expense">- 5,400 ₴</h2>
         </div>
-        <button class="btn btn-income">Додати дохід</button>
-        <button class="btn btn-expense">Додати витрату</button>
+        <button class="btn btn-income " id="addIncomeBtn">Додати дохід</button>
+        <button class="btn btn-expense" id="addExpenseBtn">Додати витрату</button>
         <div class="modal-overlay" id="modalOverlay">
             <div class="modal">
                 <div class="modal-header">
@@ -67,7 +79,7 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2026 Moneyspace. Дипломний проєкт.</p>
+            <p>&copy; 2026 Moneyspace. Кваліфікаційна робота.</p>
         </div>
     </footer>
     <script src="script.js"></script>

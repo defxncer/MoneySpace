@@ -1,55 +1,79 @@
 // =============================================
 //  Moneyspace — script.js
-//  Повний клієнтський скрипт з API-інтеграцією
+//  З підтримкою JWT авторизації
 // =============================================
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '';  // порожньо бо фронтенд і бекенд на одному сервері
 
-// --- DOM елементи ---
-const modalOverlay   = document.getElementById('modalOverlay');
-const modalTitle     = document.getElementById('modalTitle');
-const modalSubmitBtn = document.getElementById('modalSubmitBtn');
-const closeBtn       = document.getElementById('closeModal');
-const dateInput      = document.getElementById('date');
-const modalForm      = document.querySelector('.modal-form');
+// =============================================
+//  АВТОРИЗАЦІЯ — перевірка при завантаженні
+// =============================================
 
-const balanceEl      = document.querySelector('.balance-card h2');
-const incomeEl       = document.querySelector('.income-card h2');
-const expenseEl      = document.querySelector('.expense-card h2');
+const token    = localStorage.getItem('token');
+const username = localStorage.getItem('username');
+
+// Якщо немає токена — відправити на сторінку входу
+if (!token) {
+    window.location.href = 'login.html';
+}
+
+// Показати ім'я користувача в шапці
+const usernameEl = document.getElementById('username-display');
+if (usernameEl && username) {
+    usernameEl.textContent = username;
+}
+
+// Кнопка виходу
+document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    window.location.href = 'login.html';
+});
+
+// Кнопка зміни акаунту (те саме що вихід)
+document.getElementById('switchBtn').addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    window.location.href = 'login.html';
+});
+
+// =============================================
+//  DOM ЕЛЕМЕНТИ
+// =============================================
+
+const modalOverlay    = document.getElementById('modalOverlay');
+const modalTitle      = document.getElementById('modalTitle');
+const modalSubmitBtn  = document.getElementById('modalSubmitBtn');
+const closeBtn        = document.getElementById('closeModal');
+const dateInput       = document.getElementById('date');
+const modalForm       = document.querySelector('.modal-form');
+const balanceEl       = document.querySelector('.balance-card h2');
+const incomeEl        = document.querySelector('.income-card h2');
+const expenseEl       = document.querySelector('.expense-card h2');
 const transactionList = document.querySelector('.transactions');
 
-// Зберігаємо поточний тип операції ('income' або 'expense')
 let currentType = 'income';
 
 // =============================================
 //  УТИЛІТИ
 // =============================================
 
-// Встановити сьогоднішню дату у полі форми
 function setTodayDate() {
-    const today = new Date().toISOString().split('T')[0];
-    dateInput.value = today;
+    dateInput.value = new Date().toISOString().split('T')[0];
 }
 
-// Форматувати число як валюту: 12000 → "12 000 ₴"
 function formatCurrency(amount) {
     return new Intl.NumberFormat('uk-UA', {
-        style: 'currency',
-        currency: 'UAH',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
+        style: 'currency', currency: 'UAH',
+        minimumFractionDigits: 0, maximumFractionDigits: 2
     }).format(amount);
 }
 
-// Форматувати дату: "2026-04-15" → "15.04.2026"
 function formatDate(dateStr) {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('uk-UA');
+    return new Date(dateStr).toLocaleDateString('uk-UA');
 }
 
-// Показати повідомлення про помилку або успіх (тост)
 function showToast(message, isError = false) {
-    // Видалити попередній тост якщо є
     const existing = document.getElementById('toast');
     if (existing) existing.remove();
 
@@ -57,17 +81,14 @@ function showToast(message, isError = false) {
     toast.id = 'toast';
     toast.textContent = message;
     toast.style.cssText = `
-        position: fixed; bottom: 30px; right: 30px;
-        background: ${isError ? '#ee5d50' : '#05cd99'};
-        color: #fff; padding: 14px 22px;
-        border-radius: 12px; font-size: 15px; font-weight: 600;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-        z-index: 9999; opacity: 0;
-        transition: opacity 0.3s ease;
+        position:fixed; bottom:30px; right:30px;
+        background:${isError ? '#ee5d50' : '#05cd99'};
+        color:#fff; padding:14px 22px; border-radius:12px;
+        font-size:15px; font-weight:600;
+        box-shadow:0 8px 24px rgba(0,0,0,0.12);
+        z-index:9999; opacity:0; transition:opacity 0.3s ease;
     `;
     document.body.appendChild(toast);
-
-    // Анімація появи → зникнення
     requestAnimationFrame(() => { toast.style.opacity = '1'; });
     setTimeout(() => {
         toast.style.opacity = '0';
@@ -83,7 +104,6 @@ function openModal(type) {
     currentType = type;
     modalOverlay.classList.add('active');
     setTodayDate();
-    // Очистити поля попереднього введення
     document.getElementById('amount').value = '';
     document.getElementById('category').value = '';
 
@@ -102,27 +122,37 @@ function closeModal() {
     modalOverlay.classList.remove('active');
 }
 
-// Кнопки відкриття модалки
-document.querySelector('.btn-income').addEventListener('click', () => openModal('income'));
-document.querySelector('.btn-expense').addEventListener('click', () => openModal('expense'));
-
-// Закрити по хрестику, кліку на фон або Escape
+document.getElementById('addIncomeBtn').addEventListener('click', () => openModal('income'));
+document.getElementById('addExpenseBtn').addEventListener('click', () => openModal('expense'));
 closeBtn.addEventListener('click', closeModal);
-modalOverlay.addEventListener('click', (e) => {
-    if (e.target === modalOverlay) closeModal();
-});
+modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modalOverlay.classList.contains('active')) closeModal();
 });
 
 // =============================================
-//  API — ЗАПИТИ ДО БЕКЕНДУ
+//  API — ЗАПИТИ З ТОКЕНОМ
 // =============================================
 
-// GET /api/transactions — отримати всі транзакції
+// Всі запити тепер передають токен в заголовку Authorization
+function authHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
+
 async function fetchTransactions() {
     try {
-        const res = await fetch(`${API_URL}/transactions`);
+        const res = await fetch(`/api/transactions`, { headers: authHeaders() });
+
+        // Якщо токен протермінований — вийти
+        if (res.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+            return [];
+        }
+
         if (!res.ok) throw new Error('Помилка завантаження');
         return await res.json();
     } catch (err) {
@@ -131,59 +161,60 @@ async function fetchTransactions() {
     }
 }
 
-// POST /api/transactions — зберегти нову транзакцію
-async function saveTransaction(transactionData) {
-    const res = await fetch(`${API_URL}/transactions`, {
+async function saveTransaction(data) {
+    const res = await fetch(`/api/transactions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(transactionData)
+        headers: authHeaders(),
+        body: JSON.stringify(data)
     });
+
+    if (res.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+        return;
+    }
 
     if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || 'Помилка збереження');
     }
 
-    return await res.json(); // повертає збережений об'єкт з _id
+    return await res.json();
 }
 
-// DELETE /api/transactions/:id — видалити транзакцію
 async function deleteTransaction(id) {
-    const res = await fetch(`${API_URL}/transactions/${id}`, {
-        method: 'DELETE'
+    const res = await fetch(`/api/transactions/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
     });
+
+    if (res.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+        return;
+    }
+
     if (!res.ok) throw new Error('Помилка видалення');
 }
 
 // =============================================
-//  РЕНДЕР — ВІДОБРАЖЕННЯ ДАНИХ НА СТОРІНЦІ
+//  РЕНДЕР
 // =============================================
 
-// Оновити картки балансу / доходів / витрат
 function updateSummary(transactions) {
-    const income  = transactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
-
-    const expense = transactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
-
-    const balance = income - expense;
-
-    balanceEl.textContent = formatCurrency(balance);
+    const income  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    balanceEl.textContent = formatCurrency(income - expense);
     incomeEl.textContent  = `+ ${formatCurrency(income)}`;
     expenseEl.textContent = `- ${formatCurrency(expense)}`;
 }
 
-// Намалювати список транзакцій
 function renderTransactions(transactions) {
-    // Зберегти заголовок
     transactionList.innerHTML = '<h3>Останні транзакції</h3>';
 
     if (transactions.length === 0) {
         transactionList.innerHTML += `
-            <p style="color:#a3aed0; text-align:center; padding: 30px 0;">
+            <p style="color:#a3aed0; text-align:center; padding:30px 0;">
                 Транзакцій ще немає. Додайте першу!
             </p>`;
         return;
@@ -192,10 +223,8 @@ function renderTransactions(transactions) {
     transactions.forEach(t => {
         const item = document.createElement('div');
         item.classList.add('transaction-item');
-        item.dataset.id = t._id;
-
-        const sign   = t.type === 'income' ? '+' : '-';
-        const color  = t.type === 'income' ? '#05cd99' : '#ee5d50';
+        const sign  = t.type === 'income' ? '+' : '-';
+        const color = t.type === 'income' ? '#05cd99' : '#ee5d50';
 
         item.innerHTML = `
             <div>
@@ -206,13 +235,10 @@ function renderTransactions(transactions) {
                 <span style="color:${color}; font-weight:700; font-size:18px;">
                     ${sign} ${formatCurrency(t.amount)}
                 </span>
-                <button
-                    class="delete-btn"
-                    data-id="${t._id}"
-                    title="Видалити"
+                <button class="delete-btn" data-id="${t._id}" title="Видалити"
                     style="background:none; border:none; cursor:pointer;
                            color:#a3aed0; font-size:20px; line-height:1;
-                           transition: color 0.2s;">
+                           transition:color 0.2s;">
                     &times;
                 </button>
             </div>
@@ -220,7 +246,6 @@ function renderTransactions(transactions) {
         transactionList.appendChild(item);
     });
 
-    // Делегування кліків на кнопки видалення
     transactionList.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('mouseenter', () => { btn.style.color = '#ee5d50'; });
         btn.addEventListener('mouseleave', () => { btn.style.color = '#a3aed0'; });
@@ -232,7 +257,6 @@ function renderTransactions(transactions) {
 //  ОБРОБНИКИ ПОДІЙ
 // =============================================
 
-// Сабміт форми — додати транзакцію
 modalForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -240,38 +264,27 @@ modalForm.addEventListener('submit', async (e) => {
     const category = document.getElementById('category').value.trim();
     const date     = document.getElementById('date').value;
 
-    // Базова валідація
-    if (!amount || amount <= 0) {
-        showToast('Введіть коректну суму', true);
-        return;
-    }
-    if (!category) {
-        showToast('Введіть категорію', true);
-        return;
-    }
+    if (!amount || amount <= 0) { showToast('Введіть коректну суму', true); return; }
+    if (!category)              { showToast('Введіть категорію', true); return; }
 
-    // Заблокувати кнопку на час запиту
-    modalSubmitBtn.disabled = true;
+    modalSubmitBtn.disabled    = true;
     modalSubmitBtn.textContent = 'Збереження...';
 
     try {
         await saveTransaction({ type: currentType, amount, category, date });
         closeModal();
         showToast(currentType === 'income' ? 'Дохід додано!' : 'Витрату додано!');
-        await loadAll(); // оновити список і баланс
+        await loadAll();
     } catch (err) {
         showToast(err.message, true);
     } finally {
         modalSubmitBtn.disabled = false;
-        // Текст кнопки відновить openModal при наступному кліку
     }
 });
 
-// Видалення транзакції
 async function handleDelete(e) {
     const id = e.currentTarget.dataset.id;
     if (!confirm('Видалити цю транзакцію?')) return;
-
     try {
         await deleteTransaction(id);
         showToast('Транзакцію видалено');
@@ -285,12 +298,10 @@ async function handleDelete(e) {
 //  ІНІЦІАЛІЗАЦІЯ
 // =============================================
 
-// Завантажити всі дані і відрендерити сторінку
 async function loadAll() {
     const transactions = await fetchTransactions();
     updateSummary(transactions);
     renderTransactions(transactions);
 }
 
-// Запуск при завантаженні сторінки
 document.addEventListener('DOMContentLoaded', loadAll);

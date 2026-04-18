@@ -21,25 +21,58 @@ body {
 /* Хедер */
 header {
     background: #ffffff;
-    padding: 20px 0;
+    padding: 10px 0;
     border-bottom: 1px solid #e0e5f2;
     margin-bottom: 40px;
+}
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto; 
+    padding: 0 20px; 
 }
 
 .title {
     display: flex;
-    gap: 20px;
+    align-items: center; 
+    gap: 15px;
 }
 
 h1 {
-    font-size: 44px; 
+    font-size: 44px;
     color: #284ae6;
     font-weight: 700;
+    margin: 0;
 }
 
 .logo {
     width: 120px; 
     height: auto;
+}
+
+.auth-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-info {
+    color: #a3aed0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.btn-light{
+    background-color: #f4f7fe;
+    color: #284ae6;
+    border: 2px solid #284ae6;
+}
+
+.btn-blue{
+    background-color: #284ae6;
+    color: #ffffff;
 }
 
 /* Основний блок із інформацією про доходи, витрати та основний баланс */
