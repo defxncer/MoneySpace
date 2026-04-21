@@ -4,7 +4,7 @@
 - JS
 ==Інструкція Встановлення==
 1. Клонувати репозиторій:
-   git clone https://github.com/твій-нікнейм/moneyspace.git
+   git clone https://github.com/defxncer/MoneySpace
 
 2. Встановити залежності:
    cd backend
